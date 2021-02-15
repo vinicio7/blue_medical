@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Patient;
 use Exception;
 use Validator;
+use Illuminate\Support\Str;
+use JamesDordoy\LaravelVueDatatable\Http\Resources\DataTableCollectionResource;
 
 class PatientController extends Controller
 {
@@ -14,27 +16,15 @@ class PatientController extends Controller
     protected $records = array();
     protected $status_code = 400;
     
-    public function index()
+    public function index(Request $request)
     {
-        try {
-            $records = Patient::all();
-            $this->status_code  = 200;
-            $this->result       = true;
-            $this->message      = 'Registros consultados correctamente';
-            $this->records      = $records;
-        } catch (Exception $e) {
-            $this->status_code = 400;
-            $this->result = false;
-            $this->message = env('APP_DEBUG') ? $e->getMessage() : $this->message;
-        } finally {
-            $response = [
-                'result' => $this->result,
-                'message' => $this->message,
-                'records' => $this->records,
-            ];
-
-            return response()->json($response, $this->status_code);
-        }
+        $length = $request->input('length');
+        $orderBy = $request->input('column'); //Index
+        $orderByDir = $request->input('dir', 'asc');
+        $searchValue = $request->input('search');
+        $query = Patient::eloquentQuery($orderBy, $orderByDir, $searchValue);
+        $data = $query->paginate($length);
+        return new DataTableCollectionResource($data);
     }
 
   
@@ -50,14 +40,13 @@ class PatientController extends Controller
                 'height'            => 'required',
                 'marital_status'    => 'required',
                 'insurance'         => 'required',
-                'birthdate'         => 'required',
-                'password'          => 'required|min:5'
+                'birthdate'         => 'required'
             ];
 
             $messages = [
                 'name.required'             => 'Es necesario que ingrese un nombre',
                 'name.min'                  => 'El nombre debe contener más de 5 caracteres',
-                'email.required'            => 'Es necesario que ingrese una correo electronico',
+                'email.required'            => 'Es necesario que ingrese un correo electronico',
                 'email.min'                 => 'El correo electronico debe contener más de 5 caracteres',
                 'phone.required'            => 'Es necesario que ingrese un numero telefono',
                 'ocupation.required'        => 'Es necesario que ingrese una ocupacion',
@@ -66,7 +55,6 @@ class PatientController extends Controller
                 'marital_status.required'   => 'Es necesario que seleccione un estado civil',
                 'insurance.required'        => 'Es necesario que seleccione una aseguradora',
                 'birthdate.required'        => 'Es necesario que ingese fecha de nacimiento',
-                'password.required'         => 'Es necesario que ingrese una contraseña',
               
             ];
             $validator = Validator::make($request->all(), $rules, $messages);
@@ -99,7 +87,7 @@ class PatientController extends Controller
                         'marital_status' => $request->input('marital_status'),
                         'insurance' => $request->input('insurance'),
                         'birthdate' => $request->input('birthdate'),
-                        'password'  => bcrypt($request->input('password')),
+                        'password'  => bcrypt(Str::random(8)),
                     ]);
                     $this->status_code = 200;
                     $this->result = true;
@@ -109,7 +97,7 @@ class PatientController extends Controller
                   
             }
         } catch (Exception $e) {
-            $this->status_code = 400;
+            $this->status_code = 200;
             $this->result = false;
             $this->message = env('APP_DEBUG') ? $e->getMessage() : $this->message;
         } finally {
@@ -140,7 +128,7 @@ class PatientController extends Controller
             $response = [
                 'result' => $this->result,
                 'message' => $this->message,
-                'records' => $this->records,
+                'records' => $data,
             ];
 
             return response()->json($response, $this->status_code);

@@ -18,8 +18,13 @@
 
     <!-- Styles -->
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
+    <style type="text/css">
+        body.image {
+            background-image: url('img/fondo.jpg');background-size: cover;
+        }
+    </style>
 </head>
-<body>
+<body class="{{ Request::is('login') ? 'image' : '' }}">
     <div id="app">
         <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
             <div class="container">
